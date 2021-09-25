@@ -21,17 +21,20 @@ class DailyFile:
     """
     TODO: add docstring
     """
-    cols_list = ['ID','YEAR','MONTH','ELEMENT']
-    widths_list = [11,4,2,4]
 
-    def __init__(self, station_id, data_folder='data/'):
-        self.ftp = noaa_ftp.NoaaFTP('pub/data/ghcn/daily/all')
-        print(f'Retrieving {station_id}.dly')
-        self.ftp.retrieve_file(f'{station_id}.dly', data_folder)
-        self.ftp.quit()
+
+    def __init__(self, station_id, exists, data_folder='data/'):
+        if not exists:
+            self.ftp = noaa_ftp.NoaaFTP('pub/data/ghcn/daily/all')
+            print(f'Retrieving {station_id}.dly')
+            self.ftp.retrieve_file(f'{station_id}.dly', data_folder)
+            self.ftp.quit()
 
         # add VALUE(n), MFLAG(n), QFLAG(n), and SFLAG(n) for each day of the month
         print(f'Transposing {station_id} dataset')
+        self.cols_list = ['ID','YEAR','MONTH','ELEMENT']
+        self.widths_list = [11,4,2,4]
+        
         for n in range(1,32):
 
             # append column names to colsList
@@ -57,8 +60,11 @@ class DailyFile:
         self.df = pd.DataFrame(columns=['ID','YEAR','MONTH','ELEMENT','VALUE','DAY'])
 
         for i in range(1,32):
-            df_append = self.df_raw.filter(['ID','YEAR','MONTH','ELEMENT',f'VALUE{i}'])
+            df_append = self.df_raw.filter(['ID','YEAR','MONTH','ELEMENT',f'VALUE{i}',f'MFLAG{i}',f'QFLAG{i}',f'SFLAG{i}'])
             df_append.rename(columns={f'VALUE{i}':'VALUE'},inplace=True)
+            df_append.rename(columns={f'MFLAG{i}':'MFLAG'},inplace=True)
+            df_append.rename(columns={f'QFLAG{i}':'QFLAG'},inplace=True)
+            df_append.rename(columns={f'SFLAG{i}':'SFLAG'},inplace=True)
             df_append['DAY'] = i
             self.df = self.df.append(df_append)
 
